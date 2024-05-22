@@ -6,9 +6,11 @@ Run the following command to install dependencies.
 pip install requirement.txt
 ```
 
-Create directory for perturbed graphs:
+Create necessary directories:
 ```
 mkdir atkg/
+mkdir openai/
+mkdir openai/db
 ```
 
 Change the api key in api.py to your own.
