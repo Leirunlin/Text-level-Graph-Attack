@@ -8,14 +8,13 @@ n_edge_max=10
 dataset='citeseer'
 embedding='gtr'
 eval_embedding='vanilla'
-sp_level=0     # Only for tf-idf and bow, 0 for avg sp
-feat_norm=1    # Only for tf-idf and sbert
-cooc=0         # Only for tf-idf and bow
+sp_level=0     # Only for bow, 0 for avg sp
+feat_norm=1    # Only for GTR
+cooc=0         # Only for bow
 batch_size=1
 feat_upd='flip'
 runs=10
 gpu=0
-
 
 echo "Running with the following settings:"
 echo "n_inject_max = $n_inject_max"

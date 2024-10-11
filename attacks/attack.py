@@ -148,7 +148,7 @@ def gia_update_features(attacker, model, adj_attack, features, features_attack, 
         pred_loss = attacker.loss(pred[:n_total][target_idx], origin_labels[target_idx])
         homo_loss = compute_similarity_loss(features_attack, features, features_propagate, adj_attack, features_concat,
                                             n_total, homophily, hinge, disguise_coe, sim)
-        pred_loss += homo_loss * 10
+        pred_loss += homo_loss * 10 # *1, *3, *5, *7 Weight here
         model.zero_grad()
         pred_loss.backward()
         
@@ -222,7 +222,7 @@ def smooth_update_features(attacker, model, adj_attack, features, features_attac
         
         pred_loss = attacker.loss(pred[:n_total][target_idx], origin_labels[target_idx], reduction="none")
         homo_loss = compute_similarity_loss(features_attack, features, features_propagate, adj_attack, features_concat, n_total, homophily, hinge, disguise_coe, sim='hao')
-        pred_loss += homo_loss
+        pred_loss += homo_loss # *1, *3, *5, *7 Weight here
         # Smoothing the loss to prevent gradient explosion
         pred_loss = F.relu(-pred_loss + 5) ** 2
         pred_loss = pred_loss.mean()

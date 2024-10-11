@@ -157,8 +157,6 @@ def text_inversion(data):
     res_embedding = get_gtr_emb(res).to(features_attack.device)
     cosine_similarities = F.cosine_similarity(features_attack, res_embedding, dim=1)
     print(f"Cos: {cosine_similarities.mean():.3f}")
-    for i in res:
-        print(i)
     raw_texts.extend(res)
     return raw_texts
 

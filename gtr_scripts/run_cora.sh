@@ -8,13 +8,13 @@ n_edge_max=20
 dataset='cora'
 embedding='gtr'
 eval_embedding='vanilla'
-sp_level=0     # Only for tf-idf and bow, 0 for avg sp
-feat_norm=1    # Only for tf-idf and sbert
-cooc=0         # Only for tf-idf and bow
+sp_level=0     # Only for bow, 0 for avg sp
+feat_norm=1    # Only for GTR
+cooc=0         # Only for bow
 batch_size=1
 feat_upd='flip'
 runs=10
-gpu=0
+gpu=1
 
 
 echo "Running with the following settings:"

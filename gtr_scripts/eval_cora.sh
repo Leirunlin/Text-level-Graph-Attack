@@ -11,6 +11,7 @@ eval_embedding='vanilla'  # 'vanilla means directly use data.x, use bow/gtr for 
 runs=10
 dir='atkg/gtr_norm'
 trans='inv'
+gpu=0
 
 echo "Running with the following settings:"
 echo "Text_type_folder = $save_attack" # {emb}_{norm/vanilla}, if bow, only vanilla
@@ -29,15 +30,32 @@ python generate_raw_text.py --dir $dir --trans $trans --dataset $dataset
 save_attack="$dir\_$trans"
 
 
-# Eval
-echo "BOW!!!"
-python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'gcn' --eval_robo_blk --use_ln 0 --batch_eval --runs $runs --embedding=$embedding \
-    --eval_embedding="bow" --save_attack $save_attack
+# Transfer GTR to SBERT
+# echo "SBERT!!!"
+# python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'gcn' --eval_robo_blk --use_ln 0 --batch_eval --runs $runs --embedding=$embedding \
+#     --eval_embedding="sbert" --save_attack $save_attack --gpu $gpu
 
-echo "BOW!!!"
-python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'gcn' --eval_robo_blk --use_ln 0 --batch_eval --runs $runs --embedding=$embedding \
-    --eval_embedding="bow_all" --save_attack $save_attack
+# Transfer GTR to SBERT
+# echo "BOW!!!"
+# python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'gcn' --eval_robo_blk --use_ln 0 --batch_eval --runs $runs --embedding=$embedding \
+#    --eval_embedding="bow" --save_attack $save_attack
+
 
 echo "GTR!!!"
 python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'gcn' --eval_robo_blk --use_ln 0 --batch_eval --runs $runs --embedding=$embedding \
-    --eval_embedding="gtr" --save_attack $save_attack
+    --eval_embedding="gtr" --save_attack $save_attack --gpu $gpu
+
+
+# Transfer to other defense models
+
+#python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'gat' --eval_robo_blk --use_ln 0 --batch_eval --runs $runs --embedding=$embedding \
+#    --eval_embedding="gtr" --save_attack $save_attack --gpu $gpu
+
+#python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'sage' --eval_robo_blk --use_ln 0 --batch_eval --runs $runs --embedding=$embedding \
+#    --eval_embedding="gtr" --save_attack $save_attack --gpu $gpu
+
+#python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'egnnguard' --eval_robo_blk --use_ln 0 --batch_eval --runs $runs --embedding=$embedding \
+#    --eval_embedding="gtr" --save_attack $save_attack --gpu $gpu
+
+#python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'gcn' --eval_robo_blk --use_ln 0 --batch_eval --runs $runs --embedding=$embedding \
+#    --eval_embedding="gtr" --save_attack $save_attack --use_ln 1 --layer_norm_first --gpu $gpu

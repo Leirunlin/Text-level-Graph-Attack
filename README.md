@@ -9,8 +9,8 @@ pip install requirement.txt
 Create necessary directories:
 ```
 mkdir atkg/
-mkdir openai/
-mkdir openai/db
+mkdir openai_io/
+mkdir openai_io/db
 ```
 
 Change the api key in api.py to your own.
@@ -19,13 +19,29 @@ def efficient_openai_text_api(input_text, filename, savepath, sp, ss, api_key="y
 ```
 
 # ITGIA
-```
-# Embedding-level Attacks
 
+## Embedding-level Attacks
+```
 cd ./gtr_scripts
 mkdir ../atkg/gtr_norm    # The directory to save GTR-embedding attacked graphs
 bash run_cora.sh          # Default dir: atkg/gtr_norm
+```
 
+To replicate the results combining with HAO, change the weights in attacks/attack.py, 
+And run the Embedding-level Attacks.
+For example, to set HAO weight=3, you should set:
+
+```
+pred_loss += homo_loss * 10 * 3 # In gia_update_features()
+pred_loss += homo_loss * 3 # In smooth_update_features()
+cd ./gtr_scripts
+mkdir ../atkg/gtr_norm30    # The directory to save GTR-embedding attacked graphs
+# modify the default dir in run_cora.sh to atkg/gtr_norm30
+bash run_cora.sh          # Current dir: atkg/gtr_norm30
+```
+
+## Embedding to Text
+```
 # ITGIA
 bash eval_cora.sh
 ```

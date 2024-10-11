@@ -216,11 +216,10 @@ def text_feature_init(raw_data, pred_orig, n_inject_nodes, prompt_type):
     num_classes = len(label_names)
 
     if prompt_type == 'sample':
-        atk_data = torch.load(f"./atkg/gtr/{dataset_name}_atdgia_0.pt") # Reference atk file
+        atk_data = torch.load(f"./atkg/gtr_norm/{dataset_name}_atdgia_0.pt") # Reference atk file
         atk_edge_index = atk_data.edge_index
         atk_edge = atk_edge_index[:, atk_edge_index[0] >= num_nodes]
     
-
     for inj_node in range(n_inject_nodes):
         if prompt_type == 'sample':
         # Sample positive and negative examples

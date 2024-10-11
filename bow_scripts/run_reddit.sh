@@ -3,15 +3,15 @@
 cd ../
 
 # Predefined constants
-n_inject_max=60
-n_edge_max=20
-dataset='cora'
+n_inject_max=500
+n_edge_max=30
+dataset='reddit'
 embedding='bow'
 eval_embedding='vanilla'
 sp_level=0     # Only for tf-idf and bow, 0 for avg sp
 feat_norm=0    # Only for tf-idf and sbert
 cooc=0         # Only for tf-idf and bow
-batch_size=1
+batch_size=100
 feat_upd='flip'
 runs=10
 gpu=0
@@ -33,15 +33,16 @@ echo "runs = $runs"
 
 eval=false
 save_attack="atkg/bow"
-# rnd
-python -u gnn_misg.py --dataset $dataset --inductive --eval_robo --eval_attack 'rnd' \
-    --n_inject_max $n_inject_max --n_edge_max $n_edge_max --grb_mode 'full' --runs 1 \
-    --disguise_coe 0 --use_ln 0 --embedding $embedding --eval_embedding $eval_embedding \
-    --feat_norm $feat_norm --cooc $cooc --sp_level $sp_level --batch_size $batch_size \
-    --feat_upd $feat_upd --gpu $gpu
-mv atkg/${dataset}_rnd_0.pt $save_attack/${dataset}_rnd_0.pt
 
 if [ "$eval" = false ]; then
+    # rnd
+    python -u gnn_misg.py --dataset $dataset --inductive --eval_robo --eval_attack 'rnd' \
+        --n_inject_max $n_inject_max --n_edge_max $n_edge_max --grb_mode 'full' --runs 1 \
+        --disguise_coe 0 --use_ln 0 --embedding $embedding --eval_embedding $eval_embedding \
+        --feat_norm $feat_norm --cooc $cooc --sp_level $sp_level --batch_size $batch_size \
+        --feat_upd $feat_upd --gpu $gpu
+    mv atkg/${dataset}_rnd_0.pt $save_attack/${dataset}_rnd_0.pt
+    
     # seqgia
     python -u gnn_misg.py --dataset $dataset --inductive --eval_robo --eval_attack 'seqgia' \
         --n_inject_max $n_inject_max --n_edge_max $n_edge_max --grb_mode 'full' --runs 1 \
@@ -132,7 +133,7 @@ python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'gcn' --ev
                    --batch_size $batch_size --feat_upd $feat_upd --save_attack $save_attack --gpu $gpu
 
 
-python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'egnnguard' --eval_robo_blk --use_ln 0 \
-                   --batch_eval --runs $runs --embedding=$embedding \
-                   --eval_embedding=$eval_embedding --cooc $cooc --sp_level $sp_level --feat_norm $feat_norm \
-                   --batch_size $batch_size --feat_upd $feat_upd --save_attack $save_attack --gpu $gpu
+#python gnn_misg.py --dataset $dataset --inductive --eval_robo --model 'egnnguard' --eval_robo_blk --use_ln 0 \
+#                   --batch_eval --runs $runs --embedding=$embedding \
+#                   --eval_embedding=$eval_embedding --cooc $cooc --sp_level $sp_level --feat_norm $feat_norm \
+#                   --batch_size $batch_size --feat_upd $feat_upd --save_attack $save_attack --gpu $gpu

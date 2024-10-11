@@ -8,13 +8,13 @@ n_edge_max=25
 dataset='pubmed'
 embedding='bow'
 eval_embedding='vanilla'
-sp_level=0.25     # Only for tf-idf and bow, 0 for avg sp
+sp_level=0     # Only for tf-idf and bow, 0 for avg sp
 feat_norm=0    # Only for tf-idf and sbert
 cooc=0         # Only for tf-idf and bow
 batch_size=50
 feat_upd='flip'
 runs=10
-gpu=1
+gpu=0
 
 
 echo "Running with the following settings:"
@@ -31,7 +31,7 @@ echo "feat_upd = $feat_upd"
 echo "runs = $runs"
 
 
-eval=true
+eval=false
 save_attack="atkg/bow"
 # rnd
 python -u gnn_misg.py --dataset $dataset --inductive --eval_robo --eval_attack 'rnd' \

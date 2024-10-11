@@ -5,6 +5,11 @@ import torch.nn.functional as F
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sentence_transformers import SentenceTransformer
 import numpy as np
+from torch_geometric.data import Data
+from torch_geometric.nn import GCNConv
+from utils import set_rand_seed
+from torch_geometric.utils import to_undirected
+
 
 
 def get_tf_idf_by_texts(texts, max_features=500, known_mask=None):
@@ -63,10 +68,14 @@ def get_bow_by_texts(texts, dataset, max_features=500, all=False):
 
 
 def get_sbert_emb(texts, device):
-    model = SentenceTransformer().to(device)
+    model_name = 'sentence-transformers/all-MiniLM-L6-v2' 
+    model_cache_dir = '.cache/huggingface/hub'
+    model = SentenceTransformer(model_name, cache_folder=model_cache_dir).to(device)
     sbert_embeds = model.encode(texts, batch_size=32, show_progress_bar=True)
-    feat = torch.tensor(sbert_embeds)
+    feat = torch.tensor(sbert_embeds).to(device)
+    
     return feat
+
 
 
 def get_gtr_emb(texts, batch_size=32) -> torch.Tensor:
@@ -75,7 +84,7 @@ def get_gtr_emb(texts, batch_size=32) -> torch.Tensor:
     embeddings = []
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i:i+batch_size]
-        batch_embeddings = model.encode(batch_texts, convert_to_tensor=True,).to('cuda')
+        batch_embeddings = model.encode(batch_texts, convert_to_tensor=True,).to('cuda:1')
         embeddings.append(batch_embeddings)
     embeddings = torch.cat(embeddings, dim=0)
 
@@ -94,11 +103,49 @@ def text2emb(texts, dataset, embdding='bow', all=False):
     return x
 
 
-def text_stats(texts):
-    word_counts = [len(text.split()) for text in texts]
-    max_words = max(word_counts)
-    min_words = min(word_counts)
-    average_words = np.mean(word_counts)
-    std_deviation = np.std(word_counts)
+def load_reddit():
+    # Load the data from .npy files
+    edge_index = np.load('./data/reddit/edge_index.npy')
+    x_text = np.load('./data/reddit/x_text.npy')
+    y = np.load('./data/reddit/y.npy')
+
+    # Convert y to category names
+    category_name = np.where(y == 1, 'top', 'bottom')
+
+    # Convert features using text2emb
+    # x = text2emb(x_text, dataset='reddit', embdding='bow')
+
+    # Convert NumPy arrays to PyTorch tensors
+    edge_index = torch.tensor(edge_index, dtype=torch.long)
+    y = torch.tensor(y, dtype=torch.long)
+    category_names = torch.tensor([1 if name == 'top' else 0 for name in category_name], dtype=torch.long)
+
+    # Ensure edge_index is in the correct shape (2, num_edges)
+    if edge_index.shape[0] != 2:
+        edge_index = edge_index.T
+
+    # Create the PyG Data object
+    data = Data(raw_texts=x_text, edge_index=edge_index, y=y)
     
-    return max_words, min_words, average_words, std_deviation
+    # Add additional attributes
+    data.category_names = category_names
+    data.label_names = ['bottom', 'top']
+
+    return data
+
+
+def main():
+    # preprocess data for specific embedding 
+    
+    # EXample: Reddit
+    data_obj = load_reddit()
+    #data_obj = torch.load(f"./data/ogbn_arxiv_raw.pt")
+    data_obj.edge_index = to_undirected(data_obj.edge_index, num_nodes=data_obj.num_nodes)
+    emb = text2emb(data_obj.raw_texts, dataset='reddit', embdding='gtr')
+    print(emb.shape)
+    data_obj.x = emb
+    torch.save(data_obj, "./data/reddit_fixed_gtr.pt")
+
+
+if __name__ == "__main__":
+    main()

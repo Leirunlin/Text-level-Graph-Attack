@@ -12,8 +12,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch_geometric.transforms as T
-from ogb.nodeproppred import Evaluator
+from ogb.nodeproppred import Evaluator, PygNodePropPredDataset
 from torch_geometric.data import Data
+from torch_geometric.utils import index_to_mask
 
 from load_graph import generate_grb_split
 from models.model_pyg import *
@@ -86,7 +87,6 @@ def eval_robustness(model, features, adj, target_idx, raw_data, device, args, ru
             graph_path = f"{args.save_attack}/tga_{args.prompt}/{args.dataset}_{injection}"
         else:
             graph_path = os.path.join(args.save_attack,args.dataset)+f"_{args.eval_attack}"
-            print(graph_path)
         if args.eval_target:
             graph_path += "_target"
         graph_path += f"_0.pt"
@@ -316,6 +316,9 @@ def main():
             # targeted attack baselines
             args.batch_attacks = ["vanilla","rnd","gia","seqgia","metagia","tdgia","speitml","atdgia","agia","seqagia"]
             report_batch =       ["vanilla","rnd","gia","seqgia","metagia","tdgia","speitml","atdgia","agia","seqagia"]
+        elif args.dataset == 'arxiv':
+            args.batch_attacks = ["rnd","seqgia","tdgia","atdgia","seqagia"]
+            report_batch =       ["rnd","seqgia","tdgia","atdgia","seqagia"]
         elif args.eval_attack.lower() == 'tga':
             args.batch_attacks = ["tga_random", "tga_tdgia", "tga_atdgia", "tga_agia", "tga_meta"]
             report_batch =       ["tga_random", "tga_tdgia", "tga_atdgia", "tga_agia", "tga_meta"]
@@ -343,9 +346,9 @@ def main():
     device = f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu'
     device = torch.device(device)
 
-    # Eval embedding is used for evaluation (batch_eval)
+    # Eval embedding is used for evaluation for defender (batch_eval)
     # During attack, the embedding seen by attacker is args.embedding
-    # Eval_embedding is vanilla here, so default gtr
+    # Eval_embedding is vanilla, which is gtr by default
     # Logic implicitly embedded into attacks/attacker.py
     if args.eval_embedding == 'vanilla':
         # gtr by default
@@ -360,10 +363,26 @@ def main():
         data = torch.load(f"./data/{args.dataset}_fixed_{args.eval_embedding}.pt")
 
     data = T.ToSparseTensor()(data)
-    train_mask, val_mask, test_mask = generate_grb_split(data, mode=args.grb_mode)
-    split_idx = {'train': torch.nonzero(train_mask, as_tuple=True)[0],
-        'valid':torch.nonzero(val_mask, as_tuple=True)[0], 
-        'test': torch.nonzero(test_mask, as_tuple=True)[0]}
+    if args.dataset != 'arxiv':
+        train_mask, val_mask, test_mask = generate_grb_split(data, mode=args.grb_mode)
+        split_idx = {'train': torch.nonzero(train_mask, as_tuple=True)[0],
+            'valid':torch.nonzero(val_mask, as_tuple=True)[0], 
+            'test': torch.nonzero(test_mask, as_tuple=True)[0]}
+    else:
+        tmp_dataset = PygNodePropPredDataset(name='ogbn-arxiv', transform=T.ToSparseTensor(), root="/data/runlin_lei/data")
+        split_idx = tmp_dataset.get_idx_split()
+        num_nodes = data.x.shape[0]
+        train_mask = index_to_mask(split_idx['train'], size=num_nodes)
+        val_mask = index_to_mask(split_idx['valid'], size=num_nodes)
+        test_mask = index_to_mask(split_idx['test'], size=num_nodes)
+        data.y = data.label
+        data.category_names = data.class_name
+        data.label_names = data.label_name
+        del data.label
+        del data.class_name
+        del data.label_name
+
+    print(data)
     num_classes = data.y.max().item() + 1
     data.y = data.y.unsqueeze(1)
     data.train_mask, data.val_mask, data.test_mask = train_mask, val_mask, test_mask
@@ -472,7 +491,7 @@ def main():
             test_idx = split_idx["test"].to(device)
             
             target_idx = test_idx
-            x_attack, adj_attack, target_idx, raw_texts = eval_robustness(model, x_test, adj_test, target_idx, data, device, args, run)
+            x_attack, adj_attack, target_idx, raw_texts = eval_robustness(model, x_test, adj_test, target_idx, data, device, args, run)    
             x_new = torch.cat([x_test,x_attack],dim=0) if x_attack != None else x_test
             if len(args.save_attack) > 0 and not args.eval_robo_blk:
                 if args.eval_attack.lower() in ['tga']:

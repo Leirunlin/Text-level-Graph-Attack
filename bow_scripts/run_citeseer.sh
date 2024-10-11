@@ -8,7 +8,7 @@ n_edge_max=10
 dataset='citeseer'
 embedding='bow'
 eval_embedding='vanilla'
-sp_level=0.10     # Only for tf-idf and bow, 0 for avg sp
+sp_level=0     # Only for tf-idf and bow, 0 for avg sp
 feat_norm=0    # Only for tf-idf and sbert
 cooc=0         # Only for tf-idf and bow
 batch_size=1
@@ -31,7 +31,7 @@ echo "feat_upd = $feat_upd"
 echo "runs = $runs"
 
 
-eval=true
+eval=false
 save_attack="atkg/bow"
 # rnd
 python -u gnn_misg.py --dataset $dataset --inductive --eval_robo --eval_attack 'rnd' \
