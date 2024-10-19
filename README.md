@@ -3,7 +3,7 @@
 # Setup
 Run the following command to install dependencies.
 ```
-pip install requirement.txt
+pip install -r requirements.txt
 ```
 
 Create necessary directories:
