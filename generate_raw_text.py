@@ -76,7 +76,7 @@ def gen(data, dataset, filename, llm):
 
             for i, filename in enumerate(txt_files):
                 filepath = os.path.join(directory, filename)
-                with open(filepath, 'r') as file:
+                with open(filepath, 'r', encoding = 'utf-8') as file:
                     content = file.read()
                     # Find the start and end of the relevant section
                     start_index = content.lower().rfind("title")
@@ -124,7 +124,7 @@ def gen(data, dataset, filename, llm):
 
     def generate_response_gpt(client, prompt, max_tokens):
         response = client.chat.completions.create(
-        model="gpt-3.5-turbo-1106",
+        model="gpt-3.5-turbo-1106", # model_name
         messages = prompt,
         max_tokens = max_tokens
         )
@@ -153,17 +153,18 @@ def gen(data, dataset, filename, llm):
 
         return text
     
-    def generate_raw_text(dir_name, llm):
+    def generate(dir_name, llm):
         if 'gpt' in llm:
             generate_response = generate_response_gpt
         else:
             generate_response = generate_response_llama
-        model_path = "/data/yuwei_hu/LLAMA3_8B/models--meta-llama--Meta-Llama-3-8B-Instruct/snapshots/c4a54320a52ed5f88b7a2f84496903ea4ff07b45"
+        model_path = "meta-llama/Meta-Llama-3-8B" # model_path
         tokenizer = AutoTokenizer.from_pretrained(model_path)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             torch_dtype=torch.bfloat16,
             device_map="auto",
+            # attn_implementation="flash_attention_2" 
         )
         tokenizer.pad_token_id = tokenizer.eos_token_id  
         tokenizer.pad_token = tokenizer.eos_token
@@ -228,8 +229,10 @@ def gen(data, dataset, filename, llm):
                     Cap = [word.capitalize() for word in not_used_word]
                     not_used_word = np.append(not_used_word, Cap)
                     not_used_tokens = [tokenizer.encode(word)[1] for word in not_used_word]
-                    tokens_with_the = [tokenizer.encode(f"the {word}")[2] for word in not_used_word]
-                    not_used_tokens.extend(tokens_with_the)
+                    the_not_used_tokens = [tokenizer.encode(f"the {word}")[2] for word in not_used_word]
+                    not_used_tokens.extend(the_not_used_tokens)
+                    if 'mask' not in llm: # no restrict
+                        not_used_tokens = []
                     custom_processor = RestrictProcessor(tokenizer, not_used_tokens)
                     logits_processor = LogitsProcessorList([custom_processor])
                     if 'topic' in llm: 
@@ -293,13 +296,14 @@ def gen(data, dataset, filename, llm):
 
     # 1. Save input to used.npy / not_used.npy
     save_input(data, dataset)
-    # Save to dir/raw/xxx_used.npy, dir/raw/xxx_not_used.npy
+    # Save to dir_name/raw/xxx_used.npy, dir_name/raw/xxx_not_used.npy
     
     # 2. Use LLM to generate raw text
-    generate_raw_text(dir_name, llm)   
+    generate(dir_name, llm)   
+    # Save to dir_name/llm/file
 
     # 3. Load results
-    texts = load_LLM_output(f"{dir_name}{file}")
+    texts = load_LLM_output(f"{dir_name}{llm}/{file}")
     if len(texts) > 0:
         if dataset.lower() == 'cora':
             assert len(texts) == 60, "Missing content"
