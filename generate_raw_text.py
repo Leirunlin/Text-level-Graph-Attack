@@ -231,9 +231,10 @@ def gen(data, dataset, filename, llm):
                     not_used_tokens = [tokenizer.encode(word)[1] for word in not_used_word]
                     the_not_used_tokens = [tokenizer.encode(f"the {word}")[2] for word in not_used_word]
                     not_used_tokens.extend(the_not_used_tokens)
-                    if 'mask' not in llm: # no restrict
-                        not_used_tokens = []
-                    custom_processor = RestrictProcessor(tokenizer, not_used_tokens)
+                    if 'mask' in llm: 
+                        custom_processor = RestrictProcessor(tokenizer, [])
+                    else: # no restrict
+                        custom_processor = RestrictProcessor(tokenizer, not_used_tokens)
                     logits_processor = LogitsProcessorList([custom_processor])
                     if 'topic' in llm: 
                         messages = [
