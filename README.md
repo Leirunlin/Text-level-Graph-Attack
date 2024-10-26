@@ -51,14 +51,12 @@ bash eval_cora.sh
 # Embedding-level Attacks
 
 cd ./bow_scripts
-mkdir ../atkg/bow         # The directory to save BoW-embedding attacked graphs
+mkdir -p ../atkg/bow         # The directory to save BoW-embedding attacked graphs
 bash run_cora.sh          # Default dir: atkg/bow
 
 # WTGIA
-# Currently not complete, see generate_raw_text.py for details
-# The text generation part will be integrated soon
 
-bash eval_cora.sh gpt     # args: gpt/gpt_topic/llama/llama_topic
+bash eval_cora.sh llama     # args: gpt/gpt_topic/llama/llama_topic
 ```
 
 # VTGIA

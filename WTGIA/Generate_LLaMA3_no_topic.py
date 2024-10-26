@@ -184,9 +184,9 @@ def main(prefixs):
                 use_rates.append(final_use_rate)
                 not_use_rates.append(final_not_use_rate)
                 word_counts.append(final_word_count)
-                print(f'{prefix} Avg Use Rate: {np.mean(use_rates)}')
-                print(f'{prefix} Avg Not Use Rate: {np.mean(not_use_rates)}')
-                print(f'{prefix} Avg Word Count: {np.mean(word_counts)}')
+            print(f'{prefix} Avg Use Rate: {np.mean(use_rates)}')
+            print(f'{prefix} Avg Not Use Rate: {np.mean(not_use_rates)}')
+            print(f'{prefix} Avg Word Count: {np.mean(word_counts)}')
 
 if __name__ == "__main__":
     prefix_list = sys.argv[1]

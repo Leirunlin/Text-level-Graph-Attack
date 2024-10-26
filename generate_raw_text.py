@@ -158,7 +158,7 @@ def gen(data, dataset, filename, llm):
             generate_response = generate_response_gpt
         else:
             generate_response = generate_response_llama
-        model_path = "meta-llama/Meta-Llama-3-8B" # model_path
+        model_path = args.model_path
         tokenizer = AutoTokenizer.from_pretrained(model_path)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
@@ -288,9 +288,9 @@ def gen(data, dataset, filename, llm):
                     use_rates.append(final_use_rate)
                     not_use_rates.append(final_not_use_rate)
                     word_counts.append(final_word_count)
-                    print(f'{prefix} Avg Use Rate: {np.mean(use_rates)}')
-                    print(f'{prefix} Avg Not Use Rate: {np.mean(not_use_rates)}')
-                    print(f'{prefix} Avg Word Count: {np.mean(word_counts)}')
+                print(f'{prefix} Avg Use Rate: {np.mean(use_rates)}')
+                print(f'{prefix} Avg Not Use Rate: {np.mean(not_use_rates)}')
+                print(f'{prefix} Avg Word Count: {np.mean(word_counts)}')
 
     raw_texts = data.raw_texts
     texts = []
@@ -413,6 +413,7 @@ if __name__ == "__main__":
     parser.add_argument("--trans_type", type=str, help="Method of emb to text", default='gen', choices=['inv', 'gen'])
     parser.add_argument("--llm", type=str, default='llama', choices=['gpt', 'gpt_topic', 'llama', 'llama_topic', 
                                                                    'llama_mask', 'llama_topic_mask'])
+    parser.add_argument("--model_path", type=str, default='meta-llama/Meta-Llama-3-8B')
     args = parser.parse_args()
     
     main(args.dataset, args.dir, args.trans_type, args.llm)
