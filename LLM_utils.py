@@ -83,10 +83,6 @@ def read_jsonl(file_path):
     return result
 
 
-
-
-
-
 def error_analysis(output_file_path, ground_truth, label_names, gnn_output, mlp_output):
     result = read_jsonl(output_file_path)
     pred_texts = [x[1]['choices'][0]['message']['content'] for x in result]
@@ -372,7 +368,36 @@ def load_mapping(dataset=None):
         return pubmed_mapping
     elif dataset.lower() == 'arxiv':
         return arxiv_mapping
+    
+def load_bow_config(filename):
+    cora_config = {
+        'max_tokens': 512,
+        'max_words': 300,
+        'num_classes': 7,
+        'category_names': ["Rule Learning", "Neural Networks", "Case Based", "Genetic Algorithms", "Theory", "Reinforcement Learning", "Probabilistic Methods"]
+    }
 
+    citeseer_config = {
+        'max_tokens': 512,
+        'max_words': 300,
+        'num_classes': 6,
+        'category_names': ["Agents", "Machine Learning", "Information Retrieval", "Database", "Human Computer Interaction", "Artificial Intelligence"]
+    }
+
+    pubmed_config = {
+        'max_tokens': 550,
+        'max_words': 400,
+        'num_classes': 3,
+        'category_names': ['Diabetes Mellitus Experimental', 'Diabetes Mellitus Type 1', 'Diabetes Mellitus Type 2']
+    }
+
+    if 'cora' in filename:
+        return cora_config['max_tokens'], cora_config['max_words'], cora_config['num_classes'], cora_config['category_names']
+    elif 'citeseer' in filename:
+        return citeseer_config['max_tokens'], citeseer_config['max_words'], citeseer_config['num_classes'], citeseer_config['category_names']
+    elif 'pubmed' in filename:
+        return pubmed_config['max_tokens'], pubmed_config['max_words'], pubmed_config['num_classes'], pubmed_config['category_names'],
+    
 
 def few_shot():
     few_shot_samples = {

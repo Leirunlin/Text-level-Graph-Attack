@@ -56,7 +56,7 @@ bash run_cora.sh          # Default dir: atkg/bow
 
 # WTGIA
 
-bash eval_cora.sh llama     # args: gpt/gpt_topic/llama/llama_topic
+bash eval_cora.sh llama     # args: gpt/gpt_topic/llama/llama_topic/llama_mask/llama_topic_mask
 ```
 
 # VTGIA

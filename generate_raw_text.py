@@ -1,11 +1,14 @@
 import torch
 import torch.nn.functional as F
 from collections import Counter
+from openai import OpenAI
+import openai
 import vec2text
 import transformers
 from transformers import AutoTokenizer, AutoModelForCausalLM, LogitsProcessorList, LogitsProcessor
 from tqdm import tqdm
 from data_preprocess import get_gtr_emb, load_vectorizer
+from LLM_utils import load_bow_config
 import argparse
 import os
 import numpy as np
@@ -122,18 +125,19 @@ def gen(data, dataset, filename, llm):
         
         return should_use_rate, should_not_use_rate, non_use
 
-    def generate_response_gpt(client, prompt, max_tokens):
+    def generate_response_gpt(input_text, max_tokens):
+        client = OpenAI(api_key=args.api_key)
         response = client.chat.completions.create(
         model="gpt-3.5-turbo-1106", # model_name
-        messages = prompt,
+        messages = input_text,
         max_tokens = max_tokens
         )
 
         return response.choices[0].message.content 
 
-    def generate_response_llama(model, tokenizer, logits_processor, messages, max_tokens, terminators):
+    def generate_response_llama(input_text, max_tokens, model, tokenizer, logits_processor, terminators):
         input_ids = tokenizer.apply_chat_template(
-            messages,
+            input_text,
             add_generation_prompt=True,
             return_tensors="pt"
         ).to(model.device)
@@ -154,25 +158,22 @@ def gen(data, dataset, filename, llm):
         return text
     
     def generate(dir_name, llm):
-        if 'gpt' in llm:
-            generate_response = generate_response_gpt
-        else:
-            generate_response = generate_response_llama
-        model_path = args.model_path
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-            # attn_implementation="flash_attention_2" 
-        )
-        tokenizer.pad_token_id = tokenizer.eos_token_id  
-        tokenizer.pad_token = tokenizer.eos_token
-        model.config.pad_token_id = tokenizer.pad_token_id
-        terminators = [
-            tokenizer.eos_token_id,
-            tokenizer.convert_tokens_to_ids("<|eot_id|>")
-        ]
+        if 'llama' in llm: #loading model
+            model_path = args.model_path
+            tokenizer = AutoTokenizer.from_pretrained(model_path)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_path,
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+                # attn_implementation="flash_attention_2" 
+            )
+            tokenizer.pad_token_id = tokenizer.eos_token_id  
+            tokenizer.pad_token = tokenizer.eos_token
+            model.config.pad_token_id = tokenizer.pad_token_id
+            terminators = [
+                tokenizer.eos_token_id,
+                tokenizer.convert_tokens_to_ids("<|eot_id|>")
+            ]
 
         folder_path = f'{dir_name}raw'
         file_pairs = {}
@@ -197,60 +198,71 @@ def gen(data, dataset, filename, llm):
             use_rates = []
             not_use_rates = []
             word_counts = []
-            if 'not_used' in files and 'used' in files:
-                not_used_file = files['not_used']
-                used_file = files['used']
-                print(f"Processing File Pairs: {not_used_file} and {used_file}")
-                used_words = np.load(used_file,  allow_pickle=True)
-                not_used_words = np.load(not_used_file,  allow_pickle=True)
-                if 'cora' in used_file:
-                    max_tokens = 512
-                    max_words = 300
-                    num_classes = 7
-                    category_names = ["Rule Learning", "Neural Networks", "Case Based", "Genetic Algorithms", "Theory", "Reinforcement Learning", "Probabilistic Methods"]
-                elif 'citeseer' in used_file:
-                    max_tokens = 512
-                    max_words = 300
-                    num_classes = 6
-                    category_names = ["Agents", "Machine Learning", "Information Retrieval", "Database", "Human Computer Interaction", "Artificial Intelligence"]
-                elif 'pubmed' in used_file:
-                    max_tokens = 550
-                    max_words = 400
-                    num_classes = 3
-                    category_names = ['Diabetes Mellitus Experimental', 'Diabetes Mellitus Type 1', 'Diabetes Mellitus Type 2']
-                for id, (used_word, not_used_word) in tqdm(enumerate(zip(used_words, not_used_words))):
-                    if os.path.exists(f'{dir_name}{llm}/{prefix}/result_{id}.txt'):
-                        continue
-                    max_rate = 0
-                    final_use_rate = 0
-                    final_not_use_rate = 0
-                    final_word_count = 0
-                    Results = ''
+            not_used_file = files['not_used']
+            used_file = files['used']
+            print(f"Processing File Pairs: {not_used_file} and {used_file}")
+            used_words = np.load(used_file,  allow_pickle=True)
+            not_used_words = np.load(not_used_file,  allow_pickle=True)
+            max_tokens, max_words, num_classes, category_names = load_bow_config(used_file)
+            for id, (used_word, not_used_word) in tqdm(enumerate(zip(used_words, not_used_words))):
+                if os.path.exists(f'{dir_name}{llm}/{prefix}/result_{id}.txt'):
+                    continue
+                max_rate = 0
+                final_use_rate = 0
+                final_not_use_rate = 0
+                final_word_count = 0
+                Results = ''
+                if 'topic' in llm: 
+                    messages = [
+                        {"role": "system", "content": "A conversation between a user and an LLM-based AI assistant. The assistant gives helpful and honest answers."},
+                        {"role": "user", "content": "There are "+ f"{num_classes} types of paper, which are " + ", ".join(category_names) + ".\n" + "Generate a title and an abstract for paper belongs to one of the given categories.\nEnsure the generated content explicitly contains the following words: "+ ", ".join(f"'{word}'" for word in used_word) + ".\n" + "These words should appear as specified, without using synonyms, plural forms, or other variants.\n" + f"Length limit: {max_words} words." + "\nOutput the TITLE and ABSTRACT without explanation.\nTITLE:...\nABSTRACT:..."}
+                    ]
+                else:
+                    messages = [
+                        {"role": "system", "content": "A conversation between a user and an LLM-based AI assistant. The assistant gives helpful and honest answers."},
+                        {"role": "user", "content": "Generate a title and an abstract for an academic article.\n" + "Ensure the generated content explicitly contains the following words: "+ ", ".join(f"'{word}'" for word in used_word) + ".\n" + "These words should appear as specified, without using synonyms, plural forms, or other variants.\n" + f"Length limit: {max_words} words." + "\nOutput the TITLE and ABSTRACT without explanation.\nTITLE:...\nABSTRACT:..."}
+                    ]
+                # Round 1: Initial request
+                if 'llama' in llm:
                     Cap = [word.capitalize() for word in not_used_word]
                     not_used_word = np.append(not_used_word, Cap)
                     not_used_tokens = [tokenizer.encode(word)[1] for word in not_used_word]
                     the_not_used_tokens = [tokenizer.encode(f"the {word}")[2] for word in not_used_word]
                     not_used_tokens.extend(the_not_used_tokens)
                     if 'mask' in llm: 
-                        custom_processor = RestrictProcessor(tokenizer, [])
-                    else: # no restrict
                         custom_processor = RestrictProcessor(tokenizer, not_used_tokens)
+                    else: # no restrict
+                        custom_processor = RestrictProcessor(tokenizer, [])
                     logits_processor = LogitsProcessorList([custom_processor])
-                    if 'topic' in llm: 
-                        messages = [
-                            {"role": "system", "content": "A conversation between a user and an LLM-based AI assistant. The assistant gives helpful and honest answers."},
-                            {"role": "user", "content": "There are "+ f"{num_classes} types of paper, which are " + ", ".join(category_names) + ".\n" + "Generate a title and an abstract for paper belongs to one of the given categories.\nEnsure the generated content explicitly contains the following words: "+ ", ".join(f"'{word}'" for word in used_word) + ".\n" + "These words should appear as specified, without using synonyms, plural forms, or other variants.\n" + f"Length limit: {max_words} words." + "\nOutput the TITLE and ABSTRACT without explanation.\nTITLE:...\nABSTRACT:..."}
-                        ]
-                    else:
-                        messages = [
-                            {"role": "system", "content": "A conversation between a user and an LLM-based AI assistant. The assistant gives helpful and honest answers."},
-                            {"role": "user", "content": "Generate a title and an abstract for an academic article.\n" + "Ensure the generated content explicitly contains the following words: "+ ", ".join(f"'{word}'" for word in used_word) + ".\n" + "These words should appear as specified, without using synonyms, plural forms, or other variants.\n" + f"Length limit: {max_words} words." + "\nOutput the TITLE and ABSTRACT without explanation.\nTITLE:...\nABSTRACT:..."}
-                        ]
-                    # Round 1: Initial request
-                    response = generate_response(model, tokenizer, logits_processor, messages, max_tokens, terminators)
+                    response = generate_response_llama(messages, max_tokens, model, tokenizer, logits_processor, terminators)
+                elif 'gpt' in llm:
+                    response = generate_response_gpt(messages, max_tokens)
+                use_rate1, use_rate2, missing_words = calculate_usage_rates(response, used_word, not_used_word)
+                print("Initial Use Rate: {:.2f}%".format(use_rate1))
+                print("Initial Not Use Rate: {:.2f}%".format(use_rate2))
+                messages.append({"role":"assistant", "content": response})
+                if use_rate1 >= max_rate:
+                    max_rate = use_rate1
+                    final_use_rate = use_rate1
+                    final_not_use_rate = use_rate2
+                    Results = response
+                    Results += '\n\n====================================\n\n'
+                    Results += "Should Use Rate: {:.2f}%\n".format(use_rate1)
+                    Results += "Should Not Use Rate: {:.2f}%\n".format(use_rate2)
+                    Results += f"Word Count: {len(response.split())}"
+                    final_word_count = len(response.split())
+                    with open(f'{dir_name}{llm}/{prefix}/result_{id}.txt', 'w') as f:
+                        f.write(Results)
+
+                # Round 2-n: User feedback and assistant correction
+                for _ in range(3):
+                    feedback = f"You forgot to use " + ', '.join(f'\'{word}\'' for word in missing_words) + ".\n" + "Output the corrected TITLE and ABSTRACT without explanation.\nTITLE:...\nABSTRACT:..."
+                    messages.append({"role":"user", "content": feedback})
+                    if 'llama' in llm:
+                        response = generate_response_llama(messages, max_tokens, model, tokenizer, logits_processor, terminators)
+                    elif 'gpt' in llm:
+                        response = generate_response_gpt(messages, max_tokens)
                     use_rate1, use_rate2, missing_words = calculate_usage_rates(response, used_word, not_used_word)
-                    print("Initial Use Rate: {:.2f}%".format(use_rate1))
-                    print("Initial Not Use Rate: {:.2f}%".format(use_rate2))
                     messages.append({"role":"assistant", "content": response})
                     if use_rate1 >= max_rate:
                         max_rate = use_rate1
@@ -264,33 +276,13 @@ def gen(data, dataset, filename, llm):
                         final_word_count = len(response.split())
                         with open(f'{dir_name}{llm}/{prefix}/result_{id}.txt', 'w') as f:
                             f.write(Results)
-
-                    # Round 2-n: User feedback and assistant correction
-                    for _ in range(3):
-                        feedback = f"You forgot to use " + ', '.join(f'\'{word}\'' for word in missing_words) + ".\n" + "Output the corrected TITLE and ABSTRACT without explanation.\nTITLE:...\nABSTRACT:..."
-                        messages.append({"role":"user", "content": feedback})
-                        response = generate_response(model, tokenizer, logits_processor, messages, max_tokens, terminators)
-                        use_rate1, use_rate2, missing_words = calculate_usage_rates(response, used_word, not_used_word)
-                        messages.append({"role":"assistant", "content": response})
-                        if use_rate1 >= max_rate:
-                            max_rate = use_rate1
-                            final_use_rate = use_rate1
-                            final_not_use_rate = use_rate2
-                            Results = response
-                            Results += '\n\n====================================\n\n'
-                            Results += "Should Use Rate: {:.2f}%\n".format(use_rate1)
-                            Results += "Should Not Use Rate: {:.2f}%\n".format(use_rate2)
-                            Results += f"Word Count: {len(response.split())}"
-                            final_word_count = len(response.split())
-                            with open(f'{dir_name}{llm}/{prefix}/result_{id}.txt', 'w') as f:
-                                f.write(Results)
-                    print(f'Finish id {id}. Use rate is: {max_rate}. Word count is: {final_word_count}.')
-                    use_rates.append(final_use_rate)
-                    not_use_rates.append(final_not_use_rate)
-                    word_counts.append(final_word_count)
-                print(f'{prefix} Avg Use Rate: {np.mean(use_rates)}')
-                print(f'{prefix} Avg Not Use Rate: {np.mean(not_use_rates)}')
-                print(f'{prefix} Avg Word Count: {np.mean(word_counts)}')
+                print(f'Finish id {id}. Use rate is: {max_rate}. Word count is: {final_word_count}.')
+                use_rates.append(final_use_rate)
+                not_use_rates.append(final_not_use_rate)
+                word_counts.append(final_word_count)
+            print(f'{prefix} Avg Use Rate: {np.mean(use_rates)}')
+            print(f'{prefix} Avg Not Use Rate: {np.mean(not_use_rates)}')
+            print(f'{prefix} Avg Word Count: {np.mean(word_counts)}')
 
     raw_texts = data.raw_texts
     texts = []
@@ -411,9 +403,10 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default='cora')
     parser.add_argument("--dir", type=str, default="atkg/bow", help="Directory containing .pt files to process")
     parser.add_argument("--trans_type", type=str, help="Method of emb to text", default='gen', choices=['inv', 'gen'])
-    parser.add_argument("--llm", type=str, default='llama', choices=['gpt', 'gpt_topic', 'llama', 'llama_topic', 
+    parser.add_argument("--llm", type=str, default='llama_topic_mask', choices=['gpt', 'gpt_topic', 'llama', 'llama_topic', 
                                                                    'llama_mask', 'llama_topic_mask'])
     parser.add_argument("--model_path", type=str, default='meta-llama/Meta-Llama-3-8B')
+    parser.add_argument("--api_key", type=str, help='Your api key')
     args = parser.parse_args()
     
     main(args.dataset, args.dir, args.trans_type, args.llm)
