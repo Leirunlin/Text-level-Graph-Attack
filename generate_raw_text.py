@@ -179,6 +179,8 @@ def gen(data, dataset, filename, llm):
         file_pairs = {}
 
         for file in os.listdir(folder_path):
+            if args.dataset not in file:
+                continue
             file_path = os.path.join(folder_path, file)
             if os.path.isfile(file_path):
                 if file.endswith('not_used.npy'):
@@ -403,7 +405,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default='cora')
     parser.add_argument("--dir", type=str, default="atkg/bow", help="Directory containing .pt files to process")
     parser.add_argument("--trans_type", type=str, help="Method of emb to text", default='gen', choices=['inv', 'gen'])
-    parser.add_argument("--llm", type=str, default='llama_topic_mask', choices=['gpt', 'gpt_topic', 'llama', 'llama_topic', 
+    parser.add_argument("--llm", type=str, default='llama', choices=['gpt', 'gpt_topic', 'llama', 'llama_topic', 
                                                                    'llama_mask', 'llama_topic_mask'])
     parser.add_argument("--model_path", type=str, default='meta-llama/Meta-Llama-3-8B')
     parser.add_argument("--api_key", type=str, help='Your api key')

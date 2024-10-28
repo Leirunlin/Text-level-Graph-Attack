@@ -391,12 +391,31 @@ def load_bow_config(filename):
         'category_names': ['Diabetes Mellitus Experimental', 'Diabetes Mellitus Type 1', 'Diabetes Mellitus Type 2']
     }
 
+    arxiv_config = {
+        'max_tokens': 512,
+        'max_words': 350,
+        'num_classes': 40,
+        'category_names': ['Artificial Intelligence', 'Computation and Language', 'Computational Complexity', 'Computational Engineering, Finance, and Science', 'Computational Geometry', 'Computer Science and Game Theory', 'Computer Vision and Pattern Recognition', 'Computers and Society', 'Cryptography and Security', 'Data Structures and Algorithms', 'Databases', 'Digital Libraries', 'Discrete Mathematics', 'Distributed, Parallel, and Cluster Computing', 'Emerging Technologies', 'Formal Languages and Automata Theory', 'General Literature', 'Graphics', 'Hardware Architecture', 'Human-Computer Interaction', 'Information Retrieval', 'Information Theory', 'Logic in Computer Science', 'Machine Learning', 'Mathematical Software', 'Multiagent Systems', 'Multimedia', 'Networking and Internet Architecture', 'Neural and Evolutionary Computing', 'Numerical Analysis', 'Operating Systems', 'Other Computer Science', 'Performance', 'Programming Languages', 'Robotics', 'Social and Information Networks', 'Software Engineering', 'Sound', 'Symbolic Computation', 'Systems and Control']
+    }
+
+    reddit_config = {
+        'max_tokens': 550,
+        'max_words': 400,
+        'num_classes': 0,
+        'category_names': []
+    }
+    
+
     if 'cora' in filename:
         return cora_config['max_tokens'], cora_config['max_words'], cora_config['num_classes'], cora_config['category_names']
     elif 'citeseer' in filename:
         return citeseer_config['max_tokens'], citeseer_config['max_words'], citeseer_config['num_classes'], citeseer_config['category_names']
     elif 'pubmed' in filename:
-        return pubmed_config['max_tokens'], pubmed_config['max_words'], pubmed_config['num_classes'], pubmed_config['category_names'],
+        return pubmed_config['max_tokens'], pubmed_config['max_words'], pubmed_config['num_classes'], pubmed_config['category_names']
+    elif 'arxiv' in filename:
+        return arxiv_config['max_tokens'], arxiv_config['max_words'], arxiv_config['num_classes'], arxiv_config['category_names']
+    elif 'reddit' in filename:
+        return reddit_config['max_tokens'], reddit_config['max_words'], reddit_config['num_classes'], reddit_config['category_names']
     
 
 def few_shot():

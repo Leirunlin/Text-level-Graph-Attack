@@ -23,7 +23,7 @@ def efficient_openai_text_api(input_text, filename, savepath, sp, ss, api_key="y
 ## Embedding-level Attacks
 ```
 cd ./gtr_scripts
-mkdir ../atkg/gtr_norm    # The directory to save GTR-embedding attacked graphs
+mkdir -p ../atkg/gtr_norm    # The directory to save GTR-embedding attacked graphs
 bash run_cora.sh          # Default dir: atkg/gtr_norm
 ```
 
@@ -47,6 +47,12 @@ bash eval_cora.sh
 ```
 
 # WTGIA
+Change the model_path and api_key in eval_cora.sh to your own.
+```
+model_path='meta-llama/Meta-Llama-3-8B' # or your local model path here
+api_key='sk-' # your api_key here
+```
+
 ```
 # Embedding-level Attacks
 

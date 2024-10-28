@@ -10,9 +10,11 @@ embedding='bow'
 eval_embedding='vanilla'  # 'vanilla means directly use data.x, use bow/gtr for transfer'
 runs=10
 dir='atkg/bow'
+model_path='meta-llama/Meta-Llama-3-8B' # or your local model path here
+api_key='sk-' # your api_key here
 trans='gen'
 llm=$1
-gpu=1
+gpu=0
 
 echo "Running with the following settings:"
 echo "Text_type_folder = $save_attack" # {emb}_{norm/vanilla}, if bow, only vanilla
@@ -22,11 +24,13 @@ echo "dataset = $dataset"
 echo "embedding = $embedding"
 echo "eval_embedding = $eval_embedding"
 echo "dir = $dir"
+echo "model_path = $model_path" 
+echo "api_key = $api_key"
 echo "trans = $trans"
 echo "runs = $runs"
 
 # Generate raw texts
-python generate_raw_text.py --dir $dir --trans $trans --dataset $dataset --llm $llm
+python generate_raw_text.py --dir $dir --trans $trans --dataset $dataset --llm $llm --model_path $model_path --api_key $api_key
 
 save_attack="$dir"_"$trans"_"$llm"
 
