@@ -1,5 +1,8 @@
 # LLMGIA
 
+This is the official repository of our NeurIPS 2024 paper: [Intruding with Words: Towards Understanding Graph Injection Attacks at the Text Level](https://arxiv.org/abs/2405.16405).
+
+
 # Setup
 Run the following command to install dependencies.
 ```
@@ -23,7 +26,7 @@ def efficient_openai_text_api(input_text, filename, savepath, sp, ss, api_key="y
 ## Embedding-level Attacks
 ```
 cd ./ITGIA_scripts
-mkdir -p ../atkg/gtr_norm    # The directory to save GTR-embedding attacked graphs
+mkdir ../atkg/gtr_norm    # The directory to save GTR-embedding attacked graphs
 bash run_cora.sh          # Default dir: atkg/gtr_norm
 ```
 
@@ -47,12 +50,6 @@ bash eval_cora.sh
 ```
 
 # WTGIA
-Change the model_path and api_key in eval_cora.sh to your own.
-```
-model_path='meta-llama/Meta-Llama-3-8B' # or your local model path here
-api_key='sk-' # your api_key here
-```
-
 ```
 # Embedding-level Attacks
 
@@ -62,7 +59,7 @@ bash run_cora.sh          # Default dir: atkg/bow
 
 # WTGIA
 
-bash eval_cora.sh llama     # args: gpt/gpt_topic/llama/llama_topic/llama_mask/llama_topic_mask
+bash eval_cora.sh llama     # args: gpt/gpt_topic/llama/llama_topic
 ```
 
 # VTGIA
