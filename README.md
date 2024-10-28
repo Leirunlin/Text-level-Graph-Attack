@@ -1,4 +1,4 @@
-# LLMGIA
+This is the official repository of our NeurIPS 2024 paper: [Intruding with Words: Towards Understanding Graph Injection Attacks at the Text Level](https://arxiv.org/abs/2405.16405).
 
 # Setup
 Run the following command to install dependencies.
