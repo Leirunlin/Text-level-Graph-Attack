@@ -239,6 +239,7 @@ def inductive_split(adj, split_idx):
     val_mask = torch.zeros(adj.size(0)).bool()
     val_mask[split_idx["valid"]] = 1
     train_val_mask = torch.logical_or(train_mask, val_mask)
+    train_val_mask = train_val_mask.to(adj.device())
     adj_val = adj[train_val_mask][:,train_val_mask]
     adj_test = adj
     return adj_train, adj_val, adj_test
